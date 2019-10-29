@@ -1,0 +1,73 @@
+---
+- hosts: localhost
+  become: true
+  tasks:
+    - name: ensure there is no garbadge present 
+      yum:
+        name: "{{ pkg1 }}"
+        state: absent
+      vars:
+        pkg1:
+        - docker
+        - docker-client
+        - docker-client-latest
+        - docker-common
+        - docker-latest
+        - docker-latest-logrotate
+        - docker-logrotate
+        - docker-engine
+
+    - name: install docker dependencies
+      yum:
+        name: "{{ pkg2 }}"
+        state: latest
+      vars:
+        pkg2:
+        - device-mapper-persistent-data
+        - lvm2
+        - python-pip
+        - git 
+
+    - name: Add Dkr repository
+      yum_repository:
+        name: docker-ce-stable
+        description: docker stable repo by ansible
+        baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+        gpgcheck: no
+        enabled: yes
+        gpgcakey: https://download.docker.com/linux/centos/gpg
+
+    - name: install docker
+      yum:
+        name: "{{ pkg3 }}"
+        state: latest
+      vars:
+        pkg3:
+        - docker-ce-18.09.1
+        - docker-ce-cli-18.09.1
+        - containerd.io
+
+    - name: Make sure dkr is running
+      systemd:
+        state: started
+        name: docker
+
+    - name: git pull script
+      git:
+        repo: 'https://github.com/4ernogoria/work_task.git'
+        dest: /tmp/1/
+    - name: install docker module for python
+      pip:
+        name: docker-py
+    - name: creating the container
+      docker_container:
+        name: simple_httpSRV     
+        image: ubuntu
+        state: started
+        working_dir: '/tmp/http/'
+        ports:
+        - 8081:8080
+        command: '/bin/bash -xec "apt-get update && apt-get install -y python3 && python3.6 /tmp/http/httpsrv3.py"'
+        volumes:
+        - /tmp/1/:/tmp/http/ 
+
